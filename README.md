@@ -4,6 +4,7 @@
 
 ## 项目结构
 
+```
 .
 ├── Kira_frontend/                 # 前端（Next.js 16 + React 19）
 │   ├── app/                       # 页面路由
@@ -33,6 +34,7 @@
     ├── admin/                     # 管理后台（Vue 3，打包后内嵌）
     ├── static/                    # 静态资源
     └── init_db_go.sql             # 数据库初始化脚本
+```
 
 ## 快速开始
 

@@ -82,3 +82,7 @@ go.work
 kira
 kira.exe
 kira-*
+
+# AI Tools
+.opencode/
+backend/.opencode/
