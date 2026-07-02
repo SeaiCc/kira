@@ -6,7 +6,7 @@
 
 ```
 .
-├── Kira_frontend/                 # 前端（Next.js 16 + React 19）
+├── frontend/                 # 前端（Next.js 16 + React 19）
 │   ├── app/                       # 页面路由
 │   │   ├── posts/                 # 文章系统
 │   │   ├── photowall/             # 照片墙
@@ -22,7 +22,7 @@
 │   │   └── ui/                    # 通用组件（毛玻璃、动画等）
 │   └── siteConfig.ts              # 站点全局配置
 │
-└── Kira_backend/                  # 后端（Golang + Gin）
+└── backend/                  # 后端（Golang + Gin）
     ├── cmd/                       # 程序入口
     ├── internal/
     │   ├── api/                   # RESTful API 控制器
@@ -41,7 +41,7 @@
 ### 1. 后端
 
 ```bash
-cd Kira_backend
+cd backend
 
 # 配置环境变量
 cp .env.example .env
@@ -64,7 +64,7 @@ go run cmd/main.go
 - 管理后台：http://localhost:8000/admin
 2. 前端
 ```bash
-cd Kira_frontend
+cd frontend
 
 # 安装依赖
 pnpm install
