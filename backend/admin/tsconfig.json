@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",        // 新 ES 语法（可选链 ?. 空值合并 ??）
+    "module": "ESNext",        // ES 模块，使用 import/export 语法
+    "moduleResolution": "bundler",
+    "strict": false,           // 宽松模式，可能遇到类型不严格的代码
+    "strictFunctionTypes": false,
+    "noImplicitThis": true,
+    "jsx": "preserve",         // 支持 JSX 语法
+    "jsxImportSource": "vue",  // JSX 默认导入 <script setup> 语法糖
+    "skipLibCheck": true,      // 跳过类型声明文件检查（加快构建
+    "esModuleInterop": true,   // 兼容 CommonJS 模块，可直接 import Vue from 'vue
+    "isolatedModules": true,   // 每个文件独立，不能有隐式依赖
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true,
+    "allowJs": false,
+    "resolveJsonModule": true,  // 可以 import JSON 文件
+    "lib": ["ESNext", "DOM"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@build/*": ["./build/*"]
+    },
+    "types": [
+      "node",
+      "vite/client",
+      "element-plus/global",
+      "@pureadmin/table/volar",
+      "unplugin-icons/types/vue",
+      "@pureadmin/descriptions/volar"
+    ]
+  },
+  "include": [
+    "mock/*.ts",
+    "build/*.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "types/*.d.ts",
+    "vite.config.ts"
+  ],
+  "exclude": ["dist", "**/*.js", "node_modules"]
+}
