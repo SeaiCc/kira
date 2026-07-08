@@ -57,7 +57,6 @@ import {
 } from "lucide-react";
 import { getPostBySlug, likePost, type PostDetail } from "@/app/api";
 import ReadingProgress from "@/components/ui/ReadingProgress";
-import PostComments from "@/components/posts/PostComments";
 
 export default function PostDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -370,8 +369,6 @@ export default function PostDetailPage() {
         </div>
       </motion.article>
 
-      {/* 评论区域 */}
-      <PostComments postId={post.id} />
 
       {/* 图片灯箱 */}
       <div
