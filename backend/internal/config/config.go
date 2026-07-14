@@ -28,6 +28,9 @@ type Config struct {
 	GitHubClientID     string `mapstructure:"GITHUB_CLIENT_ID"`
 	GitHubClientSecret string `mapstructure:"GITHUB_CLIENT_SECRET"`
 
+	// 存储类型: local(本地) 或 oss
+	StorageType string `mapstructure:"STORAGE_TYPE"`
+
 	// Aliyun OSS
 	OSSAccessKeyID     string `mapstructure:"OSS_ACCESS_KEY_ID"`
 	OSSAccessKeySecret string `mapstructure:"OSS_ACCESS_KEY_SECRET"`
@@ -62,6 +65,9 @@ func Load() {
 		// GitHub OAuth
 		GitHubClientID:     getEnv("GITHUB_CLIENT_ID", ""),
 		GitHubClientSecret: getEnv("GITHUB_CLIENT_SECRET", ""),
+
+		// Storage
+		StorageType: getEnv("STORAGE_TYPE", "local"),
 
 		// Aliyun OSS
 		OSSAccessKeyID:     getEnv("OSS_ACCESS_KEY_ID", ""),

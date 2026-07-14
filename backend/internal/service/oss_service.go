@@ -9,6 +9,7 @@ import (
 	"image/png"
 	"io"
 	"mime/multipart"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -37,7 +38,7 @@ type UploadResult struct {
 	Orientation string `json:"orientation"`
 }
 
-// UploadImage 上传图片到阿里云 OSS
+// UploadImage 上传图片
 // file: 上传的文件
 // 返回：上传 URL 和图片方向，错误
 func UploadImage(file *multipart.FileHeader) (*UploadResult, error) {
@@ -60,44 +61,75 @@ func UploadImage(file *multipart.FileHeader) (*UploadResult, error) {
 	defer uploadedFile.Close()
 
 	// 4. 读取文件内容到内存（用于方向检测和上传）
-	var content []byte
 	buf := make([]byte, 0, file.Size)
 	for {
 		tmp := make([]byte, 1024)
-		n, err := uploadedFile.Read(tmp)
-		if err != nil {
+		n, readErr := uploadedFile.Read(tmp)
+		if n > 0 {
+			buf = append(buf, tmp[:n]...)
+		}
+		if readErr != nil {
 			break
 		}
-		buf = append(buf, tmp[:n]...)
 	}
-	content = buf
+	content := buf
 
 	// 5. 检测图片方向
 	orientation := detectOrientation(content)
 
-	// 6. 生成文件名和路径
+	// 6. 生成文件名
 	ext := filepath.Ext(file.Filename)
 	if ext == "" {
 		ext = ".webp"
 	}
-	// 确保扩展名包含点号
 	if !strings.HasPrefix(ext, ".") {
 		ext = "." + ext
 	}
 	filename := uuid.New().String() + ext
-	ossKey := config.C.OSSPrefix + filename
 
-	// 7. 上传到 OSS
+	// 7. 根据配置选择存储方式
+	if config.C.StorageType == "oss" {
+		return uploadToOSS(filename, content, orientation)
+	}
+	return uploadToLocal(filename, content, orientation)
+}
+
+// uploadToLocal 上传图片到本地服务器
+func uploadToLocal(filename string, content []byte, orientation string) (*UploadResult, error) {
+	// 确保上传目录存在
+	uploadDir := "./uploads/images"
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		return nil, err
+	}
+
+	// 写入文件
+	filePath := filepath.Join(uploadDir, filename)
+	if err := os.WriteFile(filePath, content, 0644); err != nil {
+		return nil, err
+	}
+
+	// 构造本地访问 URL
+	url := "/uploads/images/" + filename
+
+	return &UploadResult{
+		URL:         url,
+		Orientation: orientation,
+	}, nil
+}
+
+// uploadToOSS 上传图片到阿里云 OSS
+func uploadToOSS(filename string, content []byte, orientation string) (*UploadResult, error) {
 	bucket, err := getBucket()
 	if err != nil {
 		return nil, err
 	}
 
+	ossKey := config.C.OSSPrefix + filename
 	if err := bucket.PutObject(ossKey, bytes.NewReader(content)); err != nil {
 		return nil, err
 	}
 
-	// 8. 构造访问 URL
+	// 构造 OSS 访问 URL
 	url := config.C.OSSDomain + "/" + ossKey
 
 	return &UploadResult{
@@ -120,9 +152,7 @@ func getBucket() (*oss.Bucket, error) {
 }
 
 // detectOrientation 检测图片方向 (landscape 或 portrait)
-// 使用 image.DecodeConfig 仅读取图片元数据（宽高），不加载完整图片到内存
 func detectOrientation(content []byte) string {
-	// 尝试不同格式，使用 DecodeConfig 只获取宽高
 	decoders := []func(r io.Reader) (image.Config, error){
 		jpeg.DecodeConfig,
 		png.DecodeConfig,
@@ -130,14 +160,14 @@ func detectOrientation(content []byte) string {
 		gif.DecodeConfig,
 	}
 
-	for _, decode := range decoders {
-		if config, err := decode(bytes.NewReader(content)); err == nil {
-			if config.Width >= config.Height {
+	for i := 0; i < len(decoders); i++ {
+		cfg, err := decoders[i](bytes.NewReader(content))
+		if err == nil {
+			if cfg.Width >= cfg.Height {
 				return "landscape"
 			}
 			return "portrait"
 		}
 	}
-	// 默认返回 landscape
 	return "landscape"
 }
