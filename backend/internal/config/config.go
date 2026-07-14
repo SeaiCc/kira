@@ -52,7 +52,7 @@ func Load() {
 		Port: getEnvInt("PORT", 8000),
 
 		// Database
-		DatabaseURL: getEnv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5433/kirameku_go?sslmode=disable&timezone=Asia/Shanghai"),
+		DatabaseURL: getEnv("DATABASE_URL", "postgresql://postgres:123456@localhost:5432/kirameku_go?sslmode=disable&timezone=Asia/Shanghai"),
 
 		// JWT
 		JWTSecret:      getEnv("JWT_SECRET", "your-secret-key-here"),

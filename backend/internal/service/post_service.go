@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -158,28 +159,41 @@ func CreatePost(data schemas.PostCreate) (*postDict, error) {
 	}
 
 	// 插入 Post（执行 SQL，获取自增 ID）
+	fmt.Printf("[DEBUG] CreatePost: post.ID=%d, len(data.Tags)=%d, Tags=%v\n", post.ID, len(data.Tags), data.Tags)
 	if err := tx.Create(post).Error; err != nil {
+		fmt.Printf("[DEBUG] CreatePost: tx.Create failed: %v\n", err)
 		tx.Rollback()
 		return nil, err
 	}
+	fmt.Printf("[DEBUG] CreatePost: post created with ID=%d\n", post.ID)
 	// 同步标签（删除旧的，创建新的）
 	if len(data.Tags) > 0 {
+		fmt.Printf("[DEBUG] CreatePost: calling syncTags with tags=%v\n", data.Tags)
 		if err := syncTags(tx, post.ID, data.Tags); err != nil {
+			fmt.Printf("[DEBUG] CreatePost: syncTags failed: %v, rolling back\n", err)
 			tx.Rollback()
 			return nil, err
 		}
+		fmt.Printf("[DEBUG] CreatePost: syncTags succeeded\n")
+	} else {
+		fmt.Printf("[DEBUG] CreatePost: no tags, skipping syncTags\n")
 	}
 	// 更新分类计数
 	if post.CategoryID != nil {
+		fmt.Printf("[DEBUG] CreatePost: updating category count for catID=%d\n", *post.CategoryID)
 		if err := updateCategoryCount(tx, *post.CategoryID); err != nil {
+			fmt.Printf("[DEBUG] CreatePost: updateCategoryCount failed: %v, rolling back\n", err)
 			tx.Rollback()
 			return nil, err
 		}
 	}
 	// 提交事务
+	fmt.Printf("[DEBUG] CreatePost: committing transaction\n")
 	if err := tx.Commit().Error; err != nil {
+		fmt.Printf("[DEBUG] CreatePost: tx.Commit failed: %v\n", err)
 		return nil, err
 	}
+	fmt.Printf("[DEBUG] CreatePost: transaction committed successfully\n")
 	// 重新加载 Post（带关联）
 	if err := db.Preload("Category").Preload("Tags").First(post, post.ID).Error; err != nil {
 		return nil, err
@@ -410,17 +424,20 @@ func syncTags(tx *gorm.DB, postID uint, tagNames []string) error {
 		slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 		// 查找或创建标签
 		tag := models.Tag{}
-		if err := tx.Where("name = ?", name).First(tag).Error; err != nil {
+		if err := tx.Where("name = ?", name).First(&tag).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				// 创建新标签
 				tag = models.Tag{Name: name, Slug: slug}
-				if err := tx.Create(tag).Error; err != nil {
+				if err := tx.Create(&tag).Error; err != nil {
+					// fmt.Printf("[DEBUG] syncTags: CREATE tag failed: %v\n", err)
 					return err
 				}
 			} else {
 				// 出现找不到之外的其他err
 				return err
 			}
+		} else {
+			fmt.Printf("[DEBUG] syncTags: found existing tag id=%d\n", tag.ID)
 		}
 		// 更新PostTag表项
 		if err := tx.Create(&models.PostTag{PostID: postID, TagID: tag.ID}).Error; err != nil {
@@ -467,7 +484,10 @@ func updateCategoryCount(tx *gorm.DB, categoryID uint) error {
 	}
 
 	// 更新分类
-	return tx.Model(&models.Category{}).Where("id = ?", categoryID).Update("post_count", count).Error
+	if err := tx.Model(&models.Category{}).Where("id = ?", categoryID).Update("post_count", count).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 // postToDict 将 Post 对象转为带 category 和 tags 的字典
